@@ -29,8 +29,13 @@ LABELS_ES = {
     "plastic": "Plástico",
     "trash": "Basura"
 }
-
-
+class DenseCompatible(tf.keras.layers.Dense):
+    @classmethod
+    def from_config(cls, config):
+        config = dict(config)
+        config.pop("quantization_config", None)
+        return cls(**config)
+        
 @st.cache_resource
 def cargar_modelo():
     errores = []
@@ -40,28 +45,25 @@ def cargar_modelo():
             try:
                 modelo = tf.keras.models.load_model(
                     path,
-                    compile=False
+                    compile=False,
+                    custom_objects={
+                        "Dense": DenseCompatible,
+                        "keras.layers.Dense": DenseCompatible
+                    }
                 )
+
                 st.success(f"Modelo cargado: {path.name}")
                 return modelo
 
             except Exception as e:
                 errores.append(f"{path.name}: {str(e)}")
 
-    if errores:
-        st.error("No se pudo cargar ninguno de los modelos:")
+    st.error("No se pudo cargar ninguno de los modelos:")
 
-        for error in errores:
-            st.write(error)
-    else:
-        st.error(
-            "No se encontraron los archivos del modelo. "
-            "Verifique la carpeta modelo_reciclaje_mobilenet."
-        )
+    for error in errores:
+        st.write(error)
 
     st.stop()
-
-
 @st.cache_data
 def cargar_clases():
     if CLASS_PATH.exists():
