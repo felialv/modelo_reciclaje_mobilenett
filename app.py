@@ -6,7 +6,10 @@ import streamlit as st
 import tensorflow as tf
 from PIL import Image
 
-st.set_page_config(page_title="Reciclaje Computación en la Nube", layout="centered")
+st.set_page_config(
+    page_title="Reciclaje Computación en la Nube",
+    layout="centered"
+)
 
 st.title("Modelo predictivo Reciclaje clase de IA-UTH - 2026 - Felipe Alvarado")
 st.write("Suba una imagen para clasificar con el modelo MobileNetV2 preentrenado")
@@ -29,30 +32,39 @@ LABELS_ES = {
     "plastic": "Plástico",
     "trash": "Basura"
 }
+
+
 class DenseCompatible(tf.keras.layers.Dense):
+
     @classmethod
     def from_config(cls, config):
         config = dict(config)
         config.pop("quantization_config", None)
-        return cls(**config)
-        
+        return super().from_config(config)
+
+
 @st.cache_resource
 def cargar_modelo():
+
     errores = []
 
     for path in MODEL_PATHS:
+
         if path.exists():
+
             try:
                 modelo = tf.keras.models.load_model(
                     path,
                     compile=False,
                     custom_objects={
                         "Dense": DenseCompatible,
-                        "keras.layers.Dense": DenseCompatible
+                        "keras.layers.Dense": DenseCompatible,
+                        "keras.src.layers.core.dense.Dense": DenseCompatible
                     }
                 )
 
                 st.success(f"Modelo cargado: {path.name}")
+
                 return modelo
 
             except Exception as e:
@@ -64,9 +76,13 @@ def cargar_modelo():
         st.write(error)
 
     st.stop()
+
+
 @st.cache_data
 def cargar_clases():
+
     if CLASS_PATH.exists():
+
         with open(CLASS_PATH, "r", encoding="utf-8") as f:
             return json.load(f)
 
@@ -81,6 +97,7 @@ def cargar_clases():
 
 
 def preparar_imagen(img):
+
     img = img.convert("RGB").resize(IMG_SIZE)
 
     arr = np.array(img, dtype=np.float32)
@@ -91,6 +108,7 @@ def preparar_imagen(img):
 
 
 def predecir(img):
+
     preds = modelo.predict(
         preparar_imagen(img),
         verbose=0
@@ -116,6 +134,7 @@ archivo = st.file_uploader(
 )
 
 if archivo:
+
     imagen = Image.open(archivo)
 
     st.image(
@@ -139,4 +158,5 @@ if archivo:
         st.write(f"{clase}: {prob:.2f}%")
 
 else:
+
     st.info("Cargue una imagen para iniciar la clasificación.")
