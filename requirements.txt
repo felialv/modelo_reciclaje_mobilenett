@@ -1,6 +1,7 @@
+
 tensorflow==2.21.0
-matplotlib
-numpy
 streamlit
+numpy
+matplotlib
 h5py
-keras
+keras==3.12.0
