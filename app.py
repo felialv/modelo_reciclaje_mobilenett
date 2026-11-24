@@ -36,11 +36,8 @@ LABELS_ES = {
 
 class DenseCompatible(tf.keras.layers.Dense):
 
-    @classmethod
-    def from_config(cls, config):
-        config = dict(config)
-        config.pop("quantization_config", None)
-        return super().from_config(config)
+    def __init__(self, *args, quantization_config=None, **kwargs):
+        super().__init__(*args, **kwargs)
 
 
 @st.cache_resource
@@ -48,23 +45,26 @@ def cargar_modelo():
 
     errores = []
 
+    custom_objects = {
+        "Dense": DenseCompatible,
+        "keras.layers.Dense": DenseCompatible,
+        "keras.src.layers.core.dense.Dense": DenseCompatible
+    }
+
     for path in MODEL_PATHS:
 
         if path.exists():
 
             try:
-                modelo = tf.keras.models.load_model(
-                    path,
-                    compile=False,
-                    custom_objects={
-                        "Dense": DenseCompatible,
-                        "keras.layers.Dense": DenseCompatible,
-                        "keras.src.layers.core.dense.Dense": DenseCompatible
-                    }
-                )
+                with tf.keras.utils.custom_object_scope(custom_objects):
+
+                    modelo = tf.keras.models.load_model(
+                        path,
+                        compile=False,
+                        custom_objects=custom_objects
+                    )
 
                 st.success(f"Modelo cargado: {path.name}")
-
                 return modelo
 
             except Exception as e:
